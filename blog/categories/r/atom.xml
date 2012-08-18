@@ -4,7 +4,7 @@
   <title><![CDATA[Category: R | David Winter]]></title>
   <link href="http://dwinter.github.com/blog/categories/r/atom.xml" rel="self"/>
   <link href="http://dwinter.github.com/"/>
-  <updated>2012-08-18T20:42:17+12:00</updated>
+  <updated>2012-08-18T20:51:17+12:00</updated>
   <id>http://dwinter.github.com/</id>
   <author>
     <name><![CDATA[David Winter]]></name>
@@ -201,7 +201,7 @@ clean_rag_tr &lt;- clean_and_root(rag_tr, "Uropterygius_macrocephalus")
 plot(clean_rag_tr, direction = "leftward", cex = 0.5)
 ```</p>
 
-<p><img src="/images/figures/trees.png" alt="plot of chunk trees" /></p>
+<p><img src="http://i.imgur.com/QcghP.png" alt="plot of chunk trees" /></p>
 ]]></content>
   </entry>
   
