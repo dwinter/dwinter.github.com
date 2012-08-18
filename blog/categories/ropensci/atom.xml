@@ -4,7 +4,7 @@
   <title><![CDATA[Category: ROpenSci | David Winter]]></title>
   <link href="http://dwinter.github.com/blog/categories/ropensci/atom.xml" rel="self"/>
   <link href="http://dwinter.github.com/"/>
-  <updated>2012-08-18T20:51:17+12:00</updated>
+  <updated>2012-08-18T20:55:15+12:00</updated>
   <id>http://dwinter.github.com/</id>
   <author>
     <name><![CDATA[David Winter]]></name>
@@ -31,7 +31,7 @@ into their R sessions and speed the process of turning data into information. Th
 work with <a href="http://ropensci.org/packages/index.html">a bunch of databases</a>, and,
 just as importantly share their results as nice reproducable R code. Up until
 recently R has not really had a library for taking data from the NCBI's various
-databses (including such massive sources of data like Genbank and Pubmed). I'm very
+databses (including such massive sources of data as Genbank and Pubmed). I'm very
 happy to say that my library for doing just this,
  <a href="https://github.com/ropensci/rentrez"><code>rentrez</code></a> is now part of the <code>ROpenSci</code> family.</p>
 
@@ -48,11 +48,12 @@ that want to dig deeper.</p>
 <h2>What you can do</h2>
 
 <p>Grab a fork! The idea of ROpenSci is to create a set of tools that are useful to
-as many scientists as possble. If you find a bug in what I've done I want to know
-about it, if you think it can be extended please do. I'm also keen to here of
+as many scientists as possble. That means open data and open code.
+If you find a bug in what I've done I want to know about it, if you think it can
+be usefully extended feel free to pick it up and run. I'm also keen to here of
 use-cases other than the ones already outlined in the documentation.</p>
 
-<h2>An example</h2>
+<h2>An example usage</h2>
 
 <p>There are some short examples in the README file for the <code>rentrez</code> repository,
 but I thought I'd run through a longer one here. This is also reproducable blogging,
