@@ -4,7 +4,7 @@
   <title><![CDATA[Category: sequence-data | David Winter]]></title>
   <link href="http://dwinter.github.com/blog/categories/sequence-data/atom.xml" rel="self"/>
   <link href="http://dwinter.github.com/"/>
-  <updated>2012-11-17T19:09:56+13:00</updated>
+  <updated>2012-11-17T19:19:15+13:00</updated>
   <id>http://dwinter.github.com/</id>
   <author>
     <name><![CDATA[David Winter]]></name>
@@ -22,7 +22,7 @@
 my little R library for calculating population differentiation statistics, can be
 used to deal with sequence data.</p>
 
-<p>When I was designing the pacakge I was really thinking about handling microsattelite genotypes, but the statistics that mmod calculates are actually all capable of deally with almost any genetic data. Although the actualy calculations can be handled easily enough, it's a bit of a pain coverting standard sequence datasets into population
+<p>When I was designing the pacakge I was really thinking about handling microsattelite genotypes, but the statistics that mmod calculates are actually all capable of dealling with almost any genetic data. Although the actualy calculations can be handled easily enough, it's a bit of a pain converting standard sequence datasets into population
 genetic ones. So, I've written a little function to aid the conversion of the standard representation of DNA sequences in R (<code>DNAbin</code> objects) into the <code>genind</code>
 object that is used to store population genetic data.</p>
 
@@ -35,7 +35,7 @@ differentiation from sequence data.</p>
 <p>The most widely used method of measuring population differentiation from sequence
 data is  Excoffier's AMOVA (Analysis of Molecular Variance). This method takes into
 account the relationship betwen haplotypes in terms of genetic distance between them
-and paritions variation in those distances into within- and among-population components. It also produces an Fst-like statisc for every level of population strucure being considered.</p>
+and paritions variation in those distances into within- and among-population components. It also produces an Fst-like statistic (called Phi-statisitics) for every level of population strucure being considered.</p>
 
 <p><a href="http://ape.mpl.ird.fr/ep/">Emmanuel Paradis</a>'  library <code>pegas</code> can calulate
 AMOVA for a given dataset. Here's an example use some faked-up data:</p>
@@ -122,8 +122,8 @@ dm &lt;- dist.dna(fake_data, "N")
 
 <p>```</p>
 
-<p>For what ever reason the <code>amova</code> doesn't give the Fst like stats, but we can
-do that for ourselves:</p>
+<p>For what ever reason <code>amova</code> doesn't give the Phi-statisitics for each analysis,
+ but we can do that for ourselves:</p>
 
 <p><code>r
 sigma2 &lt;- res$varcomp[1, 1]
@@ -138,13 +138,11 @@ sigma2 &lt;- res$varcomp[1, 1]
 <h2>Everthing else (mmod)</h2>
 
 <p>AMOVA is very useful, but, like G_st it can be difficult to compare between
-studies because the Phi statistics are partially determined by the total diversity
-in the dataset. There is not obvious way to correct for this effect.</p>
+studies because the Phi-statistics are partially dependant on the total diversity
+in the dataset. There is not obvious way to correct for this effect, while mainting
+the information on how haplotypes relate to each other.</p>
 
-<p>An alternative approach is to discard the information about how haplotypes relate
-to each other and simply use the frequency of each haplotype present to calculate
-differentiation statistics from allele frequencies, in the same way you would
- for SNPs or microsattelites. The latest build of <code>mmod</code> has a function, <code>as.genind.DNAbin</code> to make this easy. It's not on CRAN just yet, but you can
+<p>An alternative approach is to discard that ifnormation, and simply use the frequency of each haplotype present to calculate differentiation statistics in the same way you would  for alleles from SNPs or microsattelites. The latest build of <code>mmod</code> has a function, <code>as.genind.DNAbin</code> to make this easy. It's not on CRAN just yet, but you can
  install it from github. The function takes a <code>DNAbin</code> object and a vector
  of populations for each sequence:</p>
 
@@ -235,6 +233,12 @@ diff_stats(fake_genind)
 <h2></h2>
 
 <p>```</p>
+
+<p>It is interesting to note the very different measures of differentiation you
+get from Gst_est (Nei's G_st) and other statisitics. It some ways this is the
+worst possible example for G_st, since the statistic is known to be biased upward
+when (a) there are a small number of sub-populations being considered and (b) the
+over-all deversity is high.</p>
 ]]></content>
   </entry>
   
