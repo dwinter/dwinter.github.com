@@ -9,9 +9,8 @@
   <meta name="author" content="David Winter">
 
   
-  <meta name="description" content="Biologists make a lot of data these days. In fact, we seem to make more data
-than we can really deal with. Databases like Pubmed,
-Fishbase, GBIF and &hellip;">
+  <meta name="description" content="A couple of people have contacted me in the last little while to ask whether mmod,
+my little R library for calculating population differentiation &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +65,278 @@ Fishbase, GBIF and &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/17/diff-stats-for-sequence-data/">MMOD Does Sequences</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-17T17:16:00+13:00" pubdate data-updated="true">Nov 17<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>A couple of people have contacted me in the last little while to ask whether <code>mmod</code>,
+my little R library for calculating population differentiation statistics, can be
+used to deal with sequence data.</p>
+
+<p>When I was designing the pacakge I was really thinking about handling microsattelite genotypes, but the statistics that mmod calculates are actually all capable of deally with almost any genetic data. Although the actualy calculations can be handled easily enough, it&#8217;s a bit of a pain coverting standard sequence datasets into population
+genetic ones. So, I&#8217;ve written a little function to aid the conversion of the standard representation of DNA sequences in R (<code>DNAbin</code> objects) into the <code>genind</code>
+object that is used to store population genetic data.</p>
+
+<p>I&#8217;ll use this post to show you how it works, and to compare the &#8220;identity-based&#8221;
+statisitics mmod caluclates with the standard AMOVA approach to population
+differentiation from sequence data.</p>
+
+<h2>AMOVA</h2>
+
+<p>The most widely used method of measuring population differentiation from sequence
+data is  Excoffier&#8217;s AMOVA (Analysis of Molecular Variance). This method takes into
+account the relationship betwen haplotypes in terms of genetic distance between them
+and paritions variation in those distances into within- and among-population components. It also produces an Fst-like statisc for every level of population strucure being considered.</p>
+
+<p><a href="http://ape.mpl.ird.fr/ep/">Emmanuel Paradis</a>&#8217;  library <code>pegas</code> can calulate
+AMOVA for a given dataset. Here&#8217;s an example use some faked-up data:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>library<span class="p">(</span>pegas<span class="p">)</span>
+</span><span class='line'>data<span class="p">(</span>woodmouse<span class="p">)</span>
+</span><span class='line'>set.seed<span class="p">(</span><span class="m">123</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span>fake_data <span class="o">&lt;-</span> woodmouse<span class="p">[</span>sample<span class="p">(</span><span class="m">1</span>:<span class="m">15</span><span class="p">,</span> <span class="m">100</span><span class="p">,</span> replace <span class="o">=</span> <span class="kc">TRUE</span><span class="p">),</span> <span class="p">])</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'><span class="c1">## 100 DNA sequences in binary format stored in a matrix.</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## All sequences of same length: 965 </span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## Labels: No0908S No1114S No0910S No1206S No1208S No305 ...</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## Base composition:</span>
+</span><span class='line'><span class="c1">##     a     c     g     t </span>
+</span><span class='line'><span class="c1">## 0.306 0.261 0.126 0.307 </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>To measure population differentiation we obviously need some populations, the
+<code>amova</code> function takes a vector assiging each individual in the dataset to a
+particular location (note, you aren&#8217;t limited to two levels of population structure,
+you can use R&#8217;s  formula syntax to denote, say, ~samples/sites/regions):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>pops <span class="o">&lt;-</span> factor<span class="p">(</span>rep<span class="p">(</span>c<span class="p">(</span><span class="s">&quot;Dunedin&quot;</span><span class="p">,</span> <span class="s">&quot;Mosgeil&quot;</span><span class="p">),</span> each <span class="o">=</span> <span class="m">50</span><span class="p">))</span>
+</span><span class='line'>dm <span class="o">&lt;-</span> dist.dna<span class="p">(</span>fake_data<span class="p">,</span> <span class="s">&quot;N&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">(</span>res <span class="o">&lt;-</span> amova<span class="p">(</span>dm ~ pops<span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">##   Analysis of Molecular Variance</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## Call: amova(formula = dm ~ pops)</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">##           SSD   MSD df</span>
+</span><span class='line'><span class="c1">## pops    41.72 41.72  1</span>
+</span><span class='line'><span class="c1">## Error 7449.26 76.01 98</span>
+</span><span class='line'><span class="c1">## Total 7490.98 75.67 99</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## Variance components:</span>
+</span><span class='line'><span class="c1">##       sigma2 P.value</span>
+</span><span class='line'><span class="c1">## pops  -0.686    0.71</span>
+</span><span class='line'><span class="c1">## Error 76.013        </span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## Variance coefficients:</span>
+</span><span class='line'><span class="c1">##  a </span>
+</span><span class='line'><span class="c1">## 50 </span>
+</span><span class='line'><span class="c1">## </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>For what ever reason the <code>amova</code> doesn&#8217;t give the Fst like stats, but we can
+do that for ourselves:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>sigma2 <span class="o">&lt;-</span> res<span class="p">$</span>varcomp<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="m">1</span><span class="p">]</span>
+</span><span class='line'><span class="p">(</span>phi_st <span class="o">&lt;-</span> <span class="p">(</span>sigma2<span class="o">/</span><span class="p">(</span>sigma2 <span class="o">-</span> res<span class="p">$</span>tab<span class="p">[</span><span class="m">1</span><span class="p">,</span> <span class="m">2</span><span class="p">])))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'><span class="c1">##[1] 0.0161</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>Everthing else (mmod)</h2>
+
+<p>AMOVA is very useful, but, like G_st it can be difficult to compare between
+studies because the Phi statistics are partially determined by the total diversity
+in the dataset. There is not obvious way to correct for this effect.</p>
+
+<p>An alternative approach is to discard the information about how haplotypes relate
+to each other and simply use the frequency of each haplotype present to calculate
+differentiation statistics from allele frequencies, in the same way you would
+ for SNPs or microsattelites. The latest build of <code>mmod</code> has a function, <code>as.genind.DNAbin</code> to make this easy. It&#8217;s not on CRAN just yet, but you can
+ install it from github. The function takes a <code>DNAbin</code> object and a vector
+ of populations for each sequence:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>library<span class="p">(</span>devtools<span class="p">)</span>
+</span><span class='line'>install_github<span class="p">(</span>rep<span class="o">=</span><span class="s">&#39;mmod&#39;</span><span class="p">,</span> username<span class="o">=</span><span class="s">&#39;dwinter&#39;</span><span class="p">)</span>
+</span><span class='line'>library<span class="p">(</span>mmod<span class="p">)</span>
+</span><span class='line'><span class="p">(</span>fake_genind <span class="o">&lt;-</span> as.genind.DNAbin<span class="p">(</span>x<span class="o">=</span>fake_data<span class="p">,</span> pop<span class="o">=</span>pops<span class="p">))</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">##    #####################</span>
+</span><span class='line'><span class="c1">##    ### Genind object ### </span>
+</span><span class='line'><span class="c1">##    #####################</span>
+</span><span class='line'><span class="c1">## - genotypes of individuals - </span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## S4 class:  genind</span>
+</span><span class='line'><span class="c1">## @call: genind(tab = tab, pop = pops)</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## @tab:  100 x 15 matrix of genotypes</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## @ind.names: vector of  100 individual names</span>
+</span><span class='line'><span class="c1">## @loc.names: vector of  1 locus names</span>
+</span><span class='line'><span class="c1">## @loc.nall: number of alleles per locus</span>
+</span><span class='line'><span class="c1">## @loc.fac: locus factor for the  15 columns of @tab</span>
+</span><span class='line'><span class="c1">## @all.names: list of  1 components yielding allele names for each locus</span>
+</span><span class='line'><span class="c1">## @ploidy:  2</span>
+</span><span class='line'><span class="c1">## @type:  codom</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## Optionnal contents: </span>
+</span><span class='line'><span class="c1">## @pop:  factor giving the population of each individual</span>
+</span><span class='line'><span class="c1">## @pop.names:  factor giving the population of each individual</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## @other: - empty -</span>
+</span><span class='line'><span class="c1">## </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Once you&#8217;ve converted a sequence file into a <code>genind</code> object it behaves
+just as you&#8217;d expect:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'>diff_stats<span class="p">(</span>fake_genind<span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='r'><span class='line'><span class="c1">## $per.locus</span>
+</span><span class='line'><span class="c1">##        Hs     Ht      Gst Gprime_st      D</span>
+</span><span class='line'><span class="c1">## L1 0.9257 0.9332 0.008113    0.2165 0.2037</span>
+</span><span class='line'><span class="c1">## </span>
+</span><span class='line'><span class="c1">## $global</span>
+</span><span class='line'><span class="c1">##        Hs        Ht   Gst_est Gprime_st     D_het    D_mean </span>
+</span><span class='line'><span class="c1">##  0.925657  0.933228  0.008113  0.216513  0.203696  0.203696 </span>
+</span><span class='line'><span class="c1">## </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -325,6 +596,10 @@ OTU names with the help of <code>stingr</code>. (I put the fussy work of cleanin
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/17/diff-stats-for-sequence-data/">MMOD does sequences</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2012/08/14/rentrez-an-r-package-for-interfacing-with-the-ncbis-databases/">rentrez - an R package for interfacing with the NCBI&#8217;s databases</a>

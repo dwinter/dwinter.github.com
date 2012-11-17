@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: mmod | David Winter]]></title>
+  <link href="http://dwinter.github.com/blog/categories/mmod/atom.xml" rel="self"/>
+  <link href="http://dwinter.github.com/"/>
+  <updated>2012-11-17T19:09:56+13:00</updated>
+  <id>http://dwinter.github.com/</id>
+  <author>
+    <name><![CDATA[David Winter]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[MMOD does sequences]]></title>
+    <link href="http://dwinter.github.com/blog/2012/11/17/diff-stats-for-sequence-data/"/>
+    <updated>2012-11-17T17:16:00+13:00</updated>
+    <id>http://dwinter.github.com/blog/2012/11/17/diff-stats-for-sequence-data</id>
+    <content type="html"><![CDATA[<p>A couple of people have contacted me in the last little while to ask whether <code>mmod</code>,
+my little R library for calculating population differentiation statistics, can be
+used to deal with sequence data.</p>
+
+<p>When I was designing the pacakge I was really thinking about handling microsattelite genotypes, but the statistics that mmod calculates are actually all capable of deally with almost any genetic data. Although the actualy calculations can be handled easily enough, it's a bit of a pain coverting standard sequence datasets into population
+genetic ones. So, I've written a little function to aid the conversion of the standard representation of DNA sequences in R (<code>DNAbin</code> objects) into the <code>genind</code>
+object that is used to store population genetic data.</p>
+
+<p>I'll use this post to show you how it works, and to compare the "identity-based"
+statisitics mmod caluclates with the standard AMOVA approach to population
+differentiation from sequence data.</p>
+
+<h2>AMOVA</h2>
+
+<p>The most widely used method of measuring population differentiation from sequence
+data is  Excoffier's AMOVA (Analysis of Molecular Variance). This method takes into
+account the relationship betwen haplotypes in terms of genetic distance between them
+and paritions variation in those distances into within- and among-population components. It also produces an Fst-like statisc for every level of population strucure being considered.</p>
+
+<p><a href="http://ape.mpl.ird.fr/ep/">Emmanuel Paradis</a>'  library <code>pegas</code> can calulate
+AMOVA for a given dataset. Here's an example use some faked-up data:</p>
+
+<p><code>r
+library(pegas)
+data(woodmouse)
+set.seed(123)
+(fake_data &lt;- woodmouse[sample(1:15, 100, replace = TRUE), ])
+</code></p>
+
+<p>```</p>
+
+<h2>100 DNA sequences in binary format stored in a matrix.</h2>
+
+<h2></h2>
+
+<h2>All sequences of same length: 965</h2>
+
+<h2></h2>
+
+<h2>Labels: No0908S No1114S No0910S No1206S No1208S No305 ...</h2>
+
+<h2></h2>
+
+<h2>Base composition:</h2>
+
+<h2>a     c     g     t</h2>
+
+<h2>0.306 0.261 0.126 0.307</h2>
+
+<p>```</p>
+
+<p>To measure population differentiation we obviously need some populations, the
+<code>amova</code> function takes a vector assiging each individual in the dataset to a
+particular location (note, you aren't limited to two levels of population structure,
+you can use R's  formula syntax to denote, say, ~samples/sites/regions):</p>
+
+<p><code>r
+pops &lt;- factor(rep(c("Dunedin", "Mosgeil"), each = 50))
+dm &lt;- dist.dna(fake_data, "N")
+(res &lt;- amova(dm ~ pops))
+</code></p>
+
+<p>```</p>
+
+<h2></h2>
+
+<h2>Analysis of Molecular Variance</h2>
+
+<h2></h2>
+
+<h2>Call: amova(formula = dm ~ pops)</h2>
+
+<h2></h2>
+
+<h2>SSD   MSD df</h2>
+
+<h2>pops    41.72 41.72  1</h2>
+
+<h2>Error 7449.26 76.01 98</h2>
+
+<h2>Total 7490.98 75.67 99</h2>
+
+<h2></h2>
+
+<h2>Variance components:</h2>
+
+<h2>sigma2 P.value</h2>
+
+<h2>pops  -0.686    0.71</h2>
+
+<h2>Error 76.013</h2>
+
+<h2></h2>
+
+<h2>Variance coefficients:</h2>
+
+<h2>a</h2>
+
+<h2>50</h2>
+
+<h2></h2>
+
+<p>```</p>
+
+<p>For what ever reason the <code>amova</code> doesn't give the Fst like stats, but we can
+do that for ourselves:</p>
+
+<p><code>r
+sigma2 &lt;- res$varcomp[1, 1]
+(phi_st &lt;- (sigma2/(sigma2 - res$tab[1, 2])))
+</code>
+```</p>
+
+<h2>[1] 0.0161</h2>
+
+<p>```</p>
+
+<h2>Everthing else (mmod)</h2>
+
+<p>AMOVA is very useful, but, like G_st it can be difficult to compare between
+studies because the Phi statistics are partially determined by the total diversity
+in the dataset. There is not obvious way to correct for this effect.</p>
+
+<p>An alternative approach is to discard the information about how haplotypes relate
+to each other and simply use the frequency of each haplotype present to calculate
+differentiation statistics from allele frequencies, in the same way you would
+ for SNPs or microsattelites. The latest build of <code>mmod</code> has a function, <code>as.genind.DNAbin</code> to make this easy. It's not on CRAN just yet, but you can
+ install it from github. The function takes a <code>DNAbin</code> object and a vector
+ of populations for each sequence:</p>
+
+<p><code>r
+library(devtools)
+install_github(rep='mmod', username='dwinter')
+library(mmod)
+(fake_genind &lt;- as.genind.DNAbin(x=fake_data, pop=pops))
+</code></p>
+
+<p>```</p>
+
+<h2></h2>
+
+<h2>#</h2>
+
+<h2>### Genind object ###</h2>
+
+<h2>#</h2>
+
+<h2>- genotypes of individuals -</h2>
+
+<h2></h2>
+
+<h2>S4 class:  genind</h2>
+
+<h2>@call: genind(tab = tab, pop = pops)</h2>
+
+<h2></h2>
+
+<h2>@tab:  100 x 15 matrix of genotypes</h2>
+
+<h2></h2>
+
+<h2>@ind.names: vector of  100 individual names</h2>
+
+<h2>@loc.names: vector of  1 locus names</h2>
+
+<h2>@loc.nall: number of alleles per locus</h2>
+
+<h2>@loc.fac: locus factor for the  15 columns of @tab</h2>
+
+<h2>@all.names: list of  1 components yielding allele names for each locus</h2>
+
+<h2>@ploidy:  2</h2>
+
+<h2>@type:  codom</h2>
+
+<h2></h2>
+
+<h2>Optionnal contents:</h2>
+
+<h2>@pop:  factor giving the population of each individual</h2>
+
+<h2>@pop.names:  factor giving the population of each individual</h2>
+
+<h2></h2>
+
+<h2>@other: - empty -</h2>
+
+<h2></h2>
+
+<p>```</p>
+
+<p>Once you've converted a sequence file into a <code>genind</code> object it behaves
+just as you'd expect:</p>
+
+<p><code>r
+diff_stats(fake_genind)
+</code></p>
+
+<p>```</p>
+
+<h2>$per.locus</h2>
+
+<h2>Hs     Ht      Gst Gprime_st      D</h2>
+
+<h2>L1 0.9257 0.9332 0.008113    0.2165 0.2037</h2>
+
+<h2></h2>
+
+<h2>$global</h2>
+
+<h2>Hs        Ht   Gst_est Gprime_st     D_het    D_mean</h2>
+
+<h2>0.925657  0.933228  0.008113  0.216513  0.203696  0.203696</h2>
+
+<h2></h2>
+
+<p>```</p>
+]]></content>
+  </entry>
+  
+</feed>
